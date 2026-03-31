@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudyTrack</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#F0EDE6; --bg2:#E8E4DC; --card:#FAF8F4; --border:#D8D4C8;
+  --primary:#4A6D7C; --primary-l:#D6E8EE;
+  --text1:#1C1C1A; --text2:#5A5A54; --text3:#999890;
+  --danger:#A05040; --success:#5A7A40; --nav-h:64px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',sans-serif;background:#2C2820;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:24px 16px}
+.phone{width:390px;height:844px;background:var(--bg);border-radius:44px;overflow:hidden;position:relative;box-shadow:0 40px 80px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.08)}
+.screen{width:100%;height:100%;display:none;flex-direction:column;overflow:hidden}
+.screen.active{display:flex}
+.header{padding:56px 24px 16px;background:var(--bg)}
+.header-row{display:flex;justify-content:space-between;align-items:flex-start}
+.app-name{font-family:'Noto Serif SC',serif;font-size:22px;font-weight:600;color:var(--text1)}
+.app-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.btn-primary{background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .15s,transform .1s}
+.btn-primary:active{transform:scale(.96);background:#345A68}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 24px 16px}
+.metric-card{background:var(--primary);border-radius:14px;padding:12px 14px;color:#fff}
+.metric-label{font-size:11px;opacity:.75;margin-bottom:4px}
+.metric-value{font-size:22px;font-weight:500;line-height:1}
+.metric-value.sm{font-size:15px;font-weight:500}
+.body{flex:1;overflow-y:auto;padding:0 24px 16px;scrollbar-width:none}
+.body::-webkit-scrollbar{display:none}
+.section-title{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:10px}
+.proj-card{background:var(--card);border-radius:14px;padding:14px 16px;margin-bottom:8px;border:0.5px solid var(--border);cursor:pointer;transition:transform .12s}
+.proj-card:active{transform:scale(.985)}
+.proj-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.proj-name{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:500;color:var(--text1)}
+.proj-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.proj-pct{font-size:14px;font-weight:500}
+.prog-track{height:5px;background:var(--bg2);border-radius:3px;overflow:hidden;margin-bottom:7px}
+.prog-fill{height:100%;border-radius:3px}
+.proj-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--text3)}
+.warn{color:var(--danger)!important}
+.good{color:var(--success)!important}
+.accum-row{display:flex;align-items:center;gap:6px;margin-bottom:7px}
+.accum-pips{display:flex;gap:3px}
+.accum-pip{width:6px;height:6px;border-radius:50%}
+.add-btn{text-align:center;padding:14px 0 4px;font-size:13px;color:var(--text3);cursor:pointer}
+.bottom-nav{height:var(--nav-h);background:var(--card);border-top:0.5px solid var(--border);display:flex;padding:0 8px;flex-shrink:0}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;border-radius:12px;margin:6px 2px;color:var(--text3);font-size:11px;transition:background .15s}
+.nav-item.active{background:var(--primary-l);color:var(--primary)}
+.nav-item svg{width:20px;height:20px}
+.modal-overlay{position:absolute;inset:0;background:rgba(28,28,26,.45);display:none;align-items:flex-end;z-index:100}
+.modal-overlay.open{display:flex}
+.modal-sheet{width:100%;background:var(--card);border-radius:24px 24px 0 0;padding:0 0 36px;animation:slideUp .25s cubic-bezier(.4,0,.2,1)}
+@keyframes slideUp{from{transform:translateY(100%)}}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0}
+.modal-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px 12px}
+.modal-title{font-family:'Noto Serif SC',serif;font-size:17px;font-weight:600;color:var(--text1)}
+.modal-cancel{font-size:13px;color:var(--text3);cursor:pointer;padding:4px 8px}
+.modal-body{padding:0 20px}
+.form-row{margin-bottom:14px}
+.form-label{font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500}
+.form-input,.form-select{width:100%;background:var(--bg);border:0.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--text1);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s;appearance:none}
+.form-input:focus,.form-select:focus{border-color:var(--primary)}
+.input-row{display:flex;gap:8px}
+.input-row .form-input{flex:1}
+.unit-badge{display:flex;align-items:center;justify-content:center;width:60px;font-size:13px;color:var(--text2);border:0.5px solid var(--border);border-radius:10px;background:var(--bg);flex-shrink:0}
+.ci-preview{background:var(--bg);border-radius:10px;padding:10px 14px;margin-bottom:14px}
+.ci-preview-label{font-size:11px;color:var(--text3);margin-bottom:2px}
+.ci-preview-val{font-size:14px;font-weight:500;color:var(--primary)}
+.btn-full{width:100%;background:var(--primary);color:#fff;border:none;border-radius:12px;padding:13px;font-size:15px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;transition:background .15s,transform .1s}
+.btn-full:active{transform:scale(.98);background:#345A68}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.toggle-opt{border:0.5px solid var(--border);border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+.toggle-opt.sel{border:1.5px solid var(--primary);background:var(--primary-l)}
+.toggle-opt-title{font-size:13px;font-weight:500;color:var(--text2)}
+.toggle-opt.sel .toggle-opt-title{color:var(--primary)}
+.toggle-opt-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.goal-section{overflow:hidden;transition:max-height .25s,opacity .25s;max-height:80px;opacity:1}
+.goal-section.hidden{max-height:0;opacity:0}
+.color-row{display:flex;gap:10px;margin-top:4px}
+.color-opt{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .12s}
+.color-opt.sel{border-color:var(--text1)}
+.stats-header{padding:56px 24px 16px;background:var(--bg);display:flex;justify-content:space-between;align-items:flex-end}
+.page-title{font-family:'Noto Serif SC',serif;font-size:22px;font-weight:600;color:var(--text1)}
+.seg-ctrl{display:flex;background:var(--bg2);border-radius:8px;padding:2px}
+.seg-btn{font-size:12px;padding:5px 12px;border-radius:6px;border:none;background:transparent;color:var(--text3);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.seg-btn.active{background:var(--primary);color:#fff}
+.chart-wrap{background:var(--card);border-radius:14px;padding:14px 16px;margin-bottom:10px;border:0.5px solid var(--border)}
+.chart-title{font-size:12px;color:var(--text2);font-weight:500;margin-bottom:12px}
+.bar-chart{display:flex;align-items:flex-end;gap:4px;height:80px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;gap:4px}
+.bar{width:100%;border-radius:4px 4px 0 0;min-height:4px}
+.bar-lbl{font-size:10px;color:var(--text3)}
+.active-wrap{background:var(--card);border-radius:14px;padding:14px 16px;margin-bottom:10px;border:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.active-label{font-size:13px;color:var(--text2);font-weight:500}
+.active-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.active-val{font-size:28px;font-weight:500;color:var(--primary)}
+.dist-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.dist-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dist-info{flex:1}
+.dist-top{display:flex;justify-content:space-between;font-size:12px;color:var(--text1);margin-bottom:4px}
+.dist-bar-bg{height:4px;background:var(--bg2);border-radius:2px;overflow:hidden}
+.dist-bar{height:100%;border-radius:2px}
+.detail-header{padding:56px 24px 16px;background:var(--bg)}
+.back-btn{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--primary);cursor:pointer;margin-bottom:10px}
+.detail-name-row{display:flex;align-items:center;gap:8px}
+.detail-name{font-family:'Noto Serif SC',serif;font-size:20px;font-weight:600;color:var(--text1)}
+.detail-pct{font-size:15px;font-weight:500}
+.big-prog-track{height:8px;background:var(--bg2);border-radius:4px;overflow:hidden;margin:12px 0 6px}
+.big-prog-fill{height:100%;border-radius:4px}
+.prog-nums{display:flex;justify-content:space-between;font-size:12px;color:var(--text3)}
+.accum-info{margin-top:10px;font-size:13px;padding:10px 14px;border-radius:10px;background:var(--bg2)}
+.history-title{font-size:13px;font-weight:500;color:var(--text2);margin:16px 0 8px}
+.history-item{background:var(--card);border-radius:10px;padding:10px 14px;margin-bottom:6px;border:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.history-date{font-size:12px;color:var(--text3)}
+.history-amount{font-size:14px;font-weight:500;color:var(--text1)}
+.history-note{font-size:11px;color:var(--text3);margin-top:2px}
+.settings-header{padding:56px 24px 16px;background:var(--bg)}
+.settings-group{background:var(--card);border-radius:14px;border:0.5px solid var(--border);overflow:hidden;margin-bottom:10px}
+.settings-item{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:0.5px solid var(--border);cursor:pointer}
+.settings-item:last-child{border-bottom:none}
+.settings-item-left{font-size:14px;color:var(--text1)}
+.settings-item-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.settings-item-right{font-size:13px;color:var(--text3);display:flex;align-items:center;gap:4px}
+.badge-pill{font-size:10px;background:var(--primary-l);color:var(--primary);padding:2px 8px;border-radius:20px;font-weight:500}
+.toast{position:absolute;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text1);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;white-space:nowrap;opacity:0;transition:all .3s;pointer-events:none;z-index:200}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="phone">
+
+<!-- 首页 -->
+<div class="screen active" id="screen-home">
+  <div class="header">
+    <div class="header-row">
+      <div><div class="app-name">StudyTrack</div><div class="app-sub">近30天活跃率 73%</div></div>
+      <button class="btn-primary" id="btn-checkin">+ 打卡</button>
+    </div>
+  </div>
+  <div class="metrics">
+    <div class="metric-card"><div class="metric-label">进行中项目</div><div class="metric-value" id="proj-count">4</div></div>
+    <div class="metric-card"><div class="metric-label">本周学习</div><div class="metric-value">8.5h</div></div>
+    <div class="metric-card"><div class="metric-label">今日打卡</div><div class="metric-value sm" id="today-stat">完成</div></div>
+  </div>
+  <div class="body">
+    <div class="section-title">学习项目</div>
+    <div id="proj-list"></div>
+    <div class="add-btn" id="btn-add">+ 添加项目</div>
+  </div>
+  <nav class="bottom-nav" id="nav-home">
+    <div class="nav-item active" data-page="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>首页</div>
+    <div class="nav-item" data-page="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>统计</div>
+    <div class="nav-item" data-page="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>设置</div>
+  </nav>
+</div>
+
+<!-- 统计 -->
+<div class="screen" id="screen-stats">
+  <div class="stats-header">
+    <div class="page-title">学习统计</div>
+    <div class="seg-ctrl">
+      <button class="seg-btn active" id="seg-week">本周</button>
+      <button class="seg-btn" id="seg-month">本月</button>
+    </div>
+  </div>
+  <div class="body">
+    <div class="metrics" style="padding:0 0 14px">
+      <div class="metric-card"><div class="metric-label">总时长</div><div class="metric-value" id="stat-total">—</div></div>
+      <div class="metric-card"><div class="metric-label">打卡天数</div><div class="metric-value" id="stat-days">—</div></div>
+      <div class="metric-card"><div class="metric-label">活跃率</div><div class="metric-value" id="stat-rate">—</div></div>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-title" id="chart-label">每日学习时长</div>
+      <div class="bar-chart" id="bar-chart"></div>
+    </div>
+    <div class="active-wrap">
+      <div><div class="active-label">近30天活跃率</div><div class="active-sub">22 / 30 天有打卡记录</div></div>
+      <div class="active-val">73%</div>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-title">各项目时长占比</div>
+      <div id="dist-list"></div>
+    </div>
+  </div>
+  <nav class="bottom-nav">
+    <div class="nav-item" data-page="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>首页</div>
+    <div class="nav-item active" data-page="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>统计</div>
+    <div class="nav-item" data-page="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>设置</div>
+  </nav>
+</div>
+
+<!-- 详情 -->
+<div class="screen" id="screen-detail">
+  <div class="detail-header">
+    <div class="back-btn" id="btn-back"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>返回</div>
+    <div class="detail-name-row"><span class="proj-dot" id="d-dot" style="width:10px;height:10px"></span><span class="detail-name" id="d-name"></span><span class="detail-pct" id="d-pct"></span></div>
+    <div id="d-prog-wrap"><div class="big-prog-track"><div class="big-prog-fill" id="d-bar"></div></div><div class="prog-nums"><span id="d-done"></span><span id="d-goal"></span></div></div>
+    <div class="accum-info" id="d-accum" style="display:none"></div>
+  </div>
+  <div class="body">
+    <div class="history-title">打卡记录</div>
+    <div id="history-list"></div>
+  </div>
+  <nav class="bottom-nav">
+    <div class="nav-item active" data-page="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>首页</div>
+    <div class="nav-item" data-page="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>统计</div>
+    <div class="nav-item" data-page="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>设置</div>
+  </nav>
+</div>
+
+<!-- 设置 -->
+<div class="screen" id="screen-settings">
+  <div class="settings-header"><div class="page-title">设置</div></div>
+  <div class="body">
+    <div class="section-title">项目管理</div>
+    <div class="settings-group" id="settings-proj-list"></div>
+    <div class="section-title" style="margin-top:8px">数据</div>
+    <div class="settings-group">
+      <div class="settings-item" id="btn-export">
+        <div class="settings-item-left">导出数据 CSV<div class="settings-item-sub">备份全部学习记录</div></div>
+        <div class="settings-item-right"><span class="badge-pill">V2</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+    </div>
+    <div class="section-title" style="margin-top:8px">关于</div>
+    <div class="settings-group">
+      <div class="settings-item"><div class="settings-item-left">StudyTrack</div><div class="settings-item-right">v1.0</div></div>
+      <div class="settings-item"><div class="settings-item-left">核心功能完全免费</div><div class="settings-item-right" style="color:var(--success)">✓</div></div>
+    </div>
+  </div>
+  <nav class="bottom-nav">
+    <div class="nav-item" data-page="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>首页</div>
+    <div class="nav-item" data-page="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>统计</div>
+    <div class="nav-item active" data-page="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>设置</div>
+  </nav>
+</div>
+
+<!-- Modal 打卡 -->
+<div class="modal-overlay" id="modal-checkin">
+  <div class="modal-sheet" id="sheet-checkin">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">记录学习</div>
+      <div class="modal-cancel" id="ci-cancel">取消</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">选择项目</div><select class="form-select" id="ci-proj" style="width:100%"></select></div>
+      <div class="form-row"><div class="form-label">本次进度</div>
+        <div class="input-row">
+          <input class="form-input" type="number" id="ci-amount" value="1.5" min="0.1" step="0.5">
+          <select class="form-select" id="ci-unit" style="width:76px"><option value="hour">小时</option><option value="chapter">章节</option></select>
+        </div>
+      </div>
+      <div class="form-row"><div class="form-label">备注（选填）</div><input class="form-input" type="text" id="ci-note" placeholder="今天学了什么…"></div>
+      <div class="ci-preview"><div class="ci-preview-label">打卡后状态</div><div class="ci-preview-val" id="ci-preview">—</div></div>
+      <button class="btn-full" id="ci-submit">确认打卡</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 添加 -->
+<div class="modal-overlay" id="modal-add">
+  <div class="modal-sheet" id="sheet-add">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">新建学习项目</div>
+      <div class="modal-cancel" id="add-cancel">取消</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">项目名称</div><input class="form-input" id="add-name" placeholder="例：备考雅思、学 React…"></div>
+      <div class="form-label" style="margin-bottom:8px">记录方式</div>
+      <div class="two-col">
+        <div class="toggle-opt sel" id="type-hour"><div class="toggle-opt-title">记录时长</div><div class="toggle-opt-sub">每次记学了多久</div></div>
+        <div class="toggle-opt" id="type-chapter"><div class="toggle-opt-title">记录章节</div><div class="toggle-opt-sub">每次记学了几章</div></div>
+      </div>
+      <div class="form-label" style="margin-bottom:8px">是否设定目标量？</div>
+      <div class="two-col" style="margin-bottom:14px">
+        <div class="toggle-opt sel" id="goal-yes"><div class="toggle-opt-title">设定目标</div><div class="toggle-opt-sub">显示进度条</div></div>
+        <div class="toggle-opt" id="goal-no"><div class="toggle-opt-title">只记录</div><div class="toggle-opt-sub">显示累计数量</div></div>
+      </div>
+      <div class="goal-section" id="goal-section">
+        <div class="form-row"><div class="form-label">目标总量</div>
+          <div class="input-row">
+            <input class="form-input" id="add-goal" type="number" value="50" min="1">
+            <div class="unit-badge" id="add-unit-lbl">小时</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-row"><div class="form-label">颜色标签</div><div class="color-row" id="color-picker"></div></div>
+      <button class="btn-full" id="add-submit" style="margin-top:4px">创建项目</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+</div>
+
+<script>
+const COLORS=['#4A6D7C','#7A8C5E','#9E7B50','#7C8C9E','#A08878','#62929E'];
+let selColor=COLORS[0], selType='hour', hasGoal=true, curSeg='week';
+
+let projects=[
+  {name:'Python 进阶',color:'#4A6D7C',type:'hour',goal:50,done:31,
+   history:[{date:'3月24日',amount:1.5,unit:'小时',note:'学习列表推导式'},{date:'3月22日',amount:2,unit:'小时',note:'装饰器与闭包'},{date:'3月20日',amount:1,unit:'小时',note:''}]},
+  {name:'英语六级',color:'#7A8C5E',type:'chapter',goal:50,done:42,
+   history:[{date:'3月24日',amount:2,unit:'章节',note:'阅读理解专项'},{date:'3月23日',amount:3,unit:'章节',note:''}]},
+  {name:'产品经理课程',color:'#9E7B50',type:'hour',goal:50,done:14,
+   history:[{date:'3月21日',amount:2,unit:'小时',note:'用户研究方法论'}]},
+  {name:'费曼物理学',color:'#7C8C9E',type:'chapter',goal:null,done:9,
+   history:[{date:'3月21日',amount:1,unit:'章节',note:'力学基础'},{date:'3月19日',amount:2,unit:'章节',note:''}]},
+];
+
+const weekData ={labels:['一','二','三','四','五','六','日'],vals:[1.5,2.5,0,2,2.5,0,0.5]};
+const monthData={labels:['第1周','第2周','第3周','第4周'],vals:[6.5,8,5.5,9]};
+
+function u(p){return p.type==='hour'?'小时':'章节'}
+function pc(p){return p.goal?Math.min(100,Math.round(p.done/p.goal*100)):null}
+
+function renderHome(){
+  document.getElementById('proj-count').textContent=projects.length;
+  document.getElementById('proj-list').innerHTML=projects.map((p,i)=>{
+    const pv=pc(p);
+    const right=pv!==null
+      ?`<span class="proj-pct" style="color:${p.color}">${pv}%</span>`
+      :`<span style="font-size:12px;color:${p.color}">${p.done}${u(p)}</span>`;
+    const bar=pv!==null
+      ?`<div class="prog-track"><div class="prog-fill" style="width:${pv}%;background:${p.color}"></div></div>`
+      :`<div class="accum-row"><div class="accum-pips">${Array(Math.min(p.done,15)).fill(0).map((_,j)=>`<div class="accum-pip" style="background:${p.color};opacity:${0.3+j/Math.min(p.done,15)*0.7}"></div>`).join('')}</div><span style="font-size:11px;color:${p.color};margin-left:4px">持续积累中</span></div>`;
+    const last=p.history.length?p.history[0].date+'打卡':'暂无记录';
+    const warn=pv!==null&&pv<30?`<span class="warn">⚠ 进度偏慢</span>`:last;
+    return `<div class="proj-card" data-idx="${i}"><div class="proj-top"><div class="proj-name"><span class="proj-dot" style="background:${p.color}"></span>${p.name}</div>${right}</div>${bar}<div class="proj-meta"><span>${p.done}/${p.goal||'?'} ${u(p)}</span>${warn}</div></div>`;
+  }).join('');
+
+  document.getElementById('settings-proj-list').innerHTML=projects.map((p,i)=>`
+    <div class="settings-item"><div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:${p.color};display:inline-block;flex-shrink:0"></span><div><div class="settings-item-left">${p.name}</div><div class="settings-item-sub">${p.done} ${u(p)} · ${p.goal?pc(p)+'%':'未设目标'}</div></div></div><div class="settings-item-right"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div></div>`).join('');
+}
+
+function renderStats(){
+  const isW=curSeg==='week';
+  const d=isW?weekData:monthData;
+  const tot=d.vals.reduce((a,b)=>a+b,0);
+  const days=d.vals.filter(v=>v>0).length;
+  document.getElementById('stat-total').textContent=tot.toFixed(1)+'h';
+  document.getElementById('stat-days').textContent=days+(isW?'天':'周');
+  document.getElementById('stat-rate').textContent=Math.round(days/d.vals.length*100)+'%';
+  document.getElementById('chart-label').textContent=isW?'每日学习时长（小时）':'每周学习时长（小时）';
+  const mx=Math.max(...d.vals,0.1);
+  document.getElementById('bar-chart').innerHTML=d.labels.map((l,i)=>{
+    const v=d.vals[i],h=v?Math.round(v/mx*68)+8:4;
+    return `<div class="bar-col"><div class="bar" style="height:${h}px;background:${v?'var(--primary)':'var(--bg2)'}"></div><div class="bar-lbl">${l}</div></div>`;
+  }).join('');
+  const dist=projects.map(p=>({name:p.name,color:p.color,h:p.type==='hour'?p.done*0.12:p.done*0.06}));
+  const ds=dist.reduce((a,b)=>a+b.h,0)||1;
+  document.getElementById('dist-list').innerHTML=dist.map(t=>`
+    <div class="dist-row"><div class="dist-dot" style="background:${t.color}"></div><div class="dist-info"><div class="dist-top"><span>${t.name}</span><span style="color:var(--text3)">${t.h.toFixed(1)}h</span></div><div class="dist-bar-bg"><div class="dist-bar" style="width:${Math.round(t.h/ds*100)}%;background:${t.color}"></div></div></div></div>`).join('');
+}
+
+function openDetail(i){
+  const p=projects[i];
+  const pv=pc(p);
+  document.getElementById('d-dot').style.background=p.color;
+  document.getElementById('d-name').textContent=p.name;
+  if(pv!==null){
+    document.getElementById('d-pct').textContent=' '+pv+'%';
+    document.getElementById('d-pct').style.color=p.color;
+    document.getElementById('d-bar').style.cssText=`width:${pv}%;background:${p.color}`;
+    document.getElementById('d-done').textContent=p.done+' '+u(p);
+    document.getElementById('d-goal').textContent='目标 '+p.goal+' '+u(p);
+    document.getElementById('d-prog-wrap').style.display='block';
+    document.getElementById('d-accum').style.display='none';
+  } else {
+    document.getElementById('d-pct').textContent='';
+    document.getElementById('d-prog-wrap').style.display='none';
+    const acc=document.getElementById('d-accum');
+    acc.style.display='block';
+    acc.style.color=p.color;
+    acc.textContent=`累计记录 ${p.done} ${u(p)}，持续积累中——未设目标，专注记录本身`;
+  }
+  document.getElementById('history-list').innerHTML=p.history.length
+    ?p.history.map(h=>`<div class="history-item"><div><div class="history-amount">+${h.amount} ${h.unit}</div>${h.note?`<div class="history-note">${h.note}</div>`:''}</div><div class="history-date">${h.date}</div></div>`).join('')
+    :'<div style="text-align:center;padding:24px 0;font-size:13px;color:var(--text3)">暂无打卡记录</div>';
+  goTo('detail');
+}
+
+function updatePreview(){
+  const i=parseInt(document.getElementById('ci-proj').value);
+  const p=projects[i];
+  const amt=parseFloat(document.getElementById('ci-amount').value)||0;
+  const nd=+(p.done+amt).toFixed(1);
+  if(p.goal){
+    document.getElementById('ci-preview').textContent=`${p.done} → ${nd} ${u(p)}（${Math.min(100,Math.round(nd/p.goal*100))}%）`;
+  } else {
+    document.getElementById('ci-preview').textContent=`累计 ${p.done} → ${nd} ${u(p)}`;
+  }
+}
+
+function openCheckin(){
+  document.getElementById('ci-proj').innerHTML=projects.map((p,i)=>`<option value="${i}">${p.name}</option>`).join('');
+  document.getElementById('ci-amount').value='1.5';
+  document.getElementById('ci-note').value='';
+  updatePreview();
+  document.getElementById('modal-checkin').classList.add('open');
+}
+
+function submitCheckin(){
+  const i=parseInt(document.getElementById('ci-proj').value);
+  const amt=parseFloat(document.getElementById('ci-amount').value)||0;
+  if(amt<=0){showToast('请输入有效的学习进度');return;}
+  const p=projects[i];
+  p.done=+(Math.min(p.goal||Infinity,p.done+amt)).toFixed(1);
+  const now=new Date();
+  p.history.unshift({date:`${now.getMonth()+1}月${now.getDate()}日`,amount:amt,unit:u(p),note:document.getElementById('ci-note').value.trim()});
+  document.getElementById('modal-checkin').classList.remove('open');
+  renderHome(); showToast('打卡成功！继续加油 🎉');
+}
+
+function openAdd(){
+  document.getElementById('add-name').value='';
+  document.getElementById('add-goal').value='50';
+  selType='hour'; hasGoal=true; selColor=COLORS[0];
+  document.getElementById('type-hour').classList.add('sel');
+  document.getElementById('type-chapter').classList.remove('sel');
+  document.getElementById('goal-yes').classList.add('sel');
+  document.getElementById('goal-no').classList.remove('sel');
+  document.getElementById('goal-section').classList.remove('hidden');
+  document.getElementById('add-unit-lbl').textContent='小时';
+  renderColors();
+  document.getElementById('modal-add').classList.add('open');
+}
+
+function renderColors(){
+  document.getElementById('color-picker').innerHTML=COLORS.map(c=>`<div class="color-opt ${c===selColor?'sel':''}" style="background:${c}" data-c="${c}"></div>`).join('');
+}
+
+function submitAdd(){
+  const name=document.getElementById('add-name').value.trim();
+  if(!name){showToast('请输入项目名称');return;}
+  const goal=hasGoal?(parseInt(document.getElementById('add-goal').value)||10):null;
+  projects.push({name,color:selColor,type:selType,goal,done:0,history:[]});
+  document.getElementById('modal-add').classList.remove('open');
+  renderHome(); showToast(`「${name}」已添加`);
+}
+
+function goTo(page){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+page).classList.add('active');
+  if(page==='stats') renderStats();
+}
+
+let toastT;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ── 事件绑定（全部 addEventListener，彻底隔离冒泡）
+document.getElementById('btn-checkin').addEventListener('click',openCheckin);
+document.getElementById('btn-add').addEventListener('click',openAdd);
+document.getElementById('btn-back').addEventListener('click',()=>goTo('home'));
+document.getElementById('ci-cancel').addEventListener('click',()=>document.getElementById('modal-checkin').classList.remove('open'));
+document.getElementById('ci-submit').addEventListener('click',submitCheckin);
+document.getElementById('ci-proj').addEventListener('change',updatePreview);
+document.getElementById('ci-amount').addEventListener('input',updatePreview);
+document.getElementById('add-cancel').addEventListener('click',()=>document.getElementById('modal-add').classList.remove('open'));
+document.getElementById('add-submit').addEventListener('click',submitAdd);
+document.getElementById('btn-export').addEventListener('click',()=>showToast('导出功能将在 V2 版本推出'));
+
+document.getElementById('type-hour').addEventListener('click',()=>{selType='hour';document.getElementById('type-hour').classList.add('sel');document.getElementById('type-chapter').classList.remove('sel');document.getElementById('add-unit-lbl').textContent='小时'});
+document.getElementById('type-chapter').addEventListener('click',()=>{selType='chapter';document.getElementById('type-chapter').classList.add('sel');document.getElementById('type-hour').classList.remove('sel');document.getElementById('add-unit-lbl').textContent='章节'});
+document.getElementById('goal-yes').addEventListener('click',()=>{hasGoal=true;document.getElementById('goal-yes').classList.add('sel');document.getElementById('goal-no').classList.remove('sel');document.getElementById('goal-section').classList.remove('hidden')});
+document.getElementById('goal-no').addEventListener('click',()=>{hasGoal=false;document.getElementById('goal-no').classList.add('sel');document.getElementById('goal-yes').classList.remove('sel');document.getElementById('goal-section').classList.add('hidden')});
+
+document.getElementById('color-picker').addEventListener('click',e=>{const d=e.target.closest('[data-c]');if(d){selColor=d.dataset.c;renderColors()}});
+document.getElementById('proj-list').addEventListener('click',e=>{const c=e.target.closest('.proj-card');if(c)openDetail(+c.dataset.idx)});
+
+// overlay 点在背景才关闭，sheet 内部点击不冒泡到 overlay
+document.getElementById('sheet-checkin').addEventListener('click',e=>e.stopPropagation());
+document.getElementById('sheet-add').addEventListener('click',e=>e.stopPropagation());
+document.getElementById('modal-checkin').addEventListener('click',()=>document.getElementById('modal-checkin').classList.remove('open'));
+document.getElementById('modal-add').addEventListener('click',()=>document.getElementById('modal-add').classList.remove('open'));
+
+document.querySelectorAll('.nav-item[data-page]').forEach(el=>el.addEventListener('click',()=>goTo(el.dataset.page)));
+
+document.getElementById('seg-week').addEventListener('click',()=>{curSeg='week';document.getElementById('seg-week').classList.add('active');document.getElementById('seg-month').classList.remove('active');renderStats()});
+document.getElementById('seg-month').addEventListener('click',()=>{curSeg='month';document.getElementById('seg-month').classList.add('active');document.getElementById('seg-week').classList.remove('active');renderStats()});
+
+renderHome();
+</script>
+</body>
+</html>
